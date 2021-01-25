@@ -327,7 +327,7 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
     float angle = atan(point.y / sqrt(point.x * point.x + point.z * point.z)) * 180 / M_PI;
     int scanID;
     //仰角四舍五入(加减0.5截断效果等于四舍五入)
-    int roundedAngle = int(angle + (angle<0.0?-0.5:+0.5)); 
+    int roundedAngle = int(angle + (angle<0.0?-0.5:+0.5)); // C++ 条件语句 如果angle<0，则给angle赋值-0.5 否则赋值 +0.5，为什么是< 0,这里是区分16条线，想通了
     if (roundedAngle > 0){
       scanID = roundedAngle;
     }
@@ -341,7 +341,7 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
     }
 
     //该点的旋转角
-    float ori = -atan2(point.x, point.z);
+    float ori = -atan2(point.x, point.z); // why this is the roation angle
     if (!halfPassed) {//根据扫描线是否旋转过半选择与起始位置还是终止位置进行差值计算，从而进行补偿
         //确保-pi/2 < ori - startOri < 3*pi/2
       if (ori < startOri - M_PI / 2) {
