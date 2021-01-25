@@ -42,7 +42,6 @@
 
 #include <cmath>
 #include <vector>
-
 #include <loam_velodyne/common.h>
 #include <opencv/cv.h>
 #include <nav_msgs/Odometry.h>
@@ -342,24 +341,33 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
 
     //该点的旋转角
     float ori = -atan2(point.x, point.z); // why this is the roation angle
-    if (!halfPassed) {//根据扫描线是否旋转过半选择与起始位置还是终止位置进行差值计算，从而进行补偿
+    if (!halfPassed) 
+    {//根据扫描线是否旋转过半选择与起始位置还是终止位置进行差值计算，从而进行补偿
         //确保-pi/2 < ori - startOri < 3*pi/2
-      if (ori < startOri - M_PI / 2) {
+      if (ori < startOri - M_PI / 2) 
+      {
         ori += 2 * M_PI;
-      } else if (ori > startOri + M_PI * 3 / 2) {
+      } 
+      else if (ori > startOri + M_PI * 3 / 2) {
         ori -= 2 * M_PI;
       }
 
-      if (ori - startOri > M_PI) {
+      if (ori - startOri > M_PI) 
+      {
         halfPassed = true;
       }
-    } else {
+    } 
+    else 
+    {
       ori += 2 * M_PI;
 
       //确保-3*pi/2 < ori - endOri < pi/2
-      if (ori < endOri - M_PI * 3 / 2) {
+      if (ori < endOri - M_PI * 3 / 2) 
+      {
         ori += 2 * M_PI;
-      } else if (ori > endOri + M_PI / 2) {
+      } 
+      else if (ori > endOri + M_PI / 2) 
+      {
         ori -= 2 * M_PI;
       } 
     }
@@ -367,20 +375,24 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
     //-0.5 < relTime < 1.5（点旋转的角度与整个周期旋转角度的比率, 即点云中点的相对时间）
     float relTime = (ori - startOri) / (endOri - startOri);
     //点强度=线号+点相对时间（即一个整数+一个小数，整数部分是线号，小数部分是该点的相对时间）,匀速扫描：根据当前扫描的角度和扫描周期计算相对扫描起始位置的时间
-    point.intensity = scanID + scanPeriod * relTime;
+    point.intensity = scanID + scanPeriod * relTime; // how to understand this?
 
     //点时间=点云时间+周期时间
-    if (imuPointerLast >= 0) {//如果收到IMU数据,使用IMU矫正点云畸变
+    if (imuPointerLast >= 0) 
+    {//如果收到IMU数据,使用IMU矫正点云畸变
       float pointTime = relTime * scanPeriod;//计算点的周期时间
       //寻找是否有点云的时间戳小于IMU的时间戳的IMU位置:imuPointerFront
-      while (imuPointerFront != imuPointerLast) {
-        if (timeScanCur + pointTime < imuTime[imuPointerFront]) {
+      while (imuPointerFront != imuPointerLast) 
+      {
+        if (timeScanCur + pointTime < imuTime[imuPointerFront]) 
+        {
           break;
         }
         imuPointerFront = (imuPointerFront + 1) % imuQueLength;
       }
 
-      if (timeScanCur + pointTime > imuTime[imuPointerFront]) {//没找到,此时imuPointerFront==imtPointerLast,只能以当前收到的最新的IMU的速度，位移，欧拉角作为当前点的速度，位移，欧拉角使用
+      if (timeScanCur + pointTime > imuTime[imuPointerFront]) 
+      {//没找到,此时imuPointerFront==imtPointerLast,只能以当前收到的最新的IMU的速度，位移，欧拉角作为当前点的速度，位移，欧拉角使用
         imuRollCur = imuRoll[imuPointerFront];
         imuPitchCur = imuPitch[imuPointerFront];
         imuYawCur = imuYaw[imuPointerFront];
@@ -392,7 +404,9 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
         imuShiftXCur = imuShiftX[imuPointerFront];
         imuShiftYCur = imuShiftY[imuPointerFront];
         imuShiftZCur = imuShiftZ[imuPointerFront];
-      } else {//找到了点云时间戳小于IMU时间戳的IMU位置,则该点必处于imuPointerBack和imuPointerFront之间，据此线性插值，计算点云点的速度，位移和欧拉角
+      } 
+      else 
+      {//找到了点云时间戳小于IMU时间戳的IMU位置,则该点必处于imuPointerBack和imuPointerFront之间，据此线性插值，计算点云点的速度，位移和欧拉角
         int imuPointerBack = (imuPointerFront + imuQueLength - 1) % imuQueLength;
         //按时间距离计算权重分配比率,也即线性插值
         float ratioFront = (timeScanCur + pointTime - imuTime[imuPointerBack]) 
@@ -442,13 +456,13 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
   }
 
   //获得有效范围内的点的数量
-  cloudSize = count;
+  cloudSize = count; // here
 
   pcl::PointCloud<PointType>::Ptr laserCloud(new pcl::PointCloud<PointType>());
   for (int i = 0; i < N_SCANS; i++) {//将所有的点按照线号从小到大放入一个容器
     *laserCloud += laserCloudScans[i];
   }
-  int scanCount = -1;
+  int scanCount = -1; // 这是做啥用的？
   for (int i = 5; i < cloudSize - 5; i++) {//使用每个点的前后五个点计算曲率，因此前五个与最后五个点跳过
     float diffX = laserCloud->points[i - 5].x + laserCloud->points[i - 4].x 
                 + laserCloud->points[i - 3].x + laserCloud->points[i - 2].x 
@@ -478,7 +492,8 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
     cloudLabel[i] = 0;
 
     //每个scan，只有第一个符合的点会进来，因为每个scan的点都在一起存放
-    if (int(laserCloud->points[i].intensity) != scanCount) {
+    if (int(laserCloud->points[i].intensity) != scanCount) // what is this doing for ?
+    {
       scanCount = int(laserCloud->points[i].intensity);//控制每个scan只进入第一个点
 
       //曲率只取同一个scan计算出来的，跨scan计算的曲率非法，排除，也即排除每个scan的前后五个点
@@ -490,7 +505,7 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
   }
   //第一个scan曲率点有效点序从第5个开始，最后一个激光线结束点序size-5
   scanStartInd[0] = 5;
-  scanEndInd.back() = cloudSize - 5;
+  scanEndInd.back() = cloudSize - 5;  // here
 
   //挑选点，排除容易被斜面挡住的点以及离群点，有些点容易被斜面挡住，而离群点可能出现带有偶然性，这些情况都可能导致前后两次扫描不能被同时看到
   for (int i = 5; i < cloudSize - 6; i++) {//与后一个点差值，所以减6
