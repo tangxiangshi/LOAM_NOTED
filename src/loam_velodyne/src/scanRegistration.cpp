@@ -456,7 +456,7 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
   }
 
   //获得有效范围内的点的数量
-  cloudSize = count; // here
+  cloudSize = count;
 
   pcl::PointCloud<PointType>::Ptr laserCloud(new pcl::PointCloud<PointType>());
   for (int i = 0; i < N_SCANS; i++) {//将所有的点按照线号从小到大放入一个容器
@@ -492,7 +492,7 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
     cloudLabel[i] = 0;
 
     //每个scan，只有第一个符合的点会进来，因为每个scan的点都在一起存放
-    if (int(laserCloud->points[i].intensity) != scanCount) // what is this doing for ?
+    if (int(laserCloud->points[i].intensity) != scanCount) // what is this doing for ? 
     {
       scanCount = int(laserCloud->points[i].intensity);//控制每个scan只进入第一个点
 
@@ -505,7 +505,7 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
   }
   //第一个scan曲率点有效点序从第5个开始，最后一个激光线结束点序size-5
   scanStartInd[0] = 5;
-  scanEndInd.back() = cloudSize - 5;  // here
+  scanEndInd.back() = cloudSize - 5;
 
   //挑选点，排除容易被斜面挡住的点以及离群点，有些点容易被斜面挡住，而离群点可能出现带有偶然性，这些情况都可能导致前后两次扫描不能被同时看到
   for (int i = 5; i < cloudSize - 6; i++) {//与后一个点差值，所以减6
@@ -528,13 +528,15 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
                      laserCloud->points[i + 1].z * laserCloud->points[i + 1].z);
 
       //按照两点的深度的比例，将深度较大的点拉回后计算距离
-      if (depth1 > depth2) {
+      if (depth1 > depth2)   // here
+      {
         diffX = laserCloud->points[i + 1].x - laserCloud->points[i].x * depth2 / depth1;
         diffY = laserCloud->points[i + 1].y - laserCloud->points[i].y * depth2 / depth1;
         diffZ = laserCloud->points[i + 1].z - laserCloud->points[i].z * depth2 / depth1;
 
         //边长比也即是弧度值，若小于0.1，说明夹角比较小，斜面比较陡峭,点深度变化比较剧烈,点处在近似与激光束平行的斜面上
-        if (sqrt(diffX * diffX + diffY * diffY + diffZ * diffZ) / depth2 < 0.1) {//排除容易被斜面挡住的点
+        if (sqrt(diffX * diffX + diffY * diffY + diffZ * diffZ) / depth2 < 0.1) 
+        {//排除容易被斜面挡住的点
             //该点及前面五个点（大致都在斜面上）全部置为筛选过
           cloudNeighborPicked[i - 5] = 1;
           cloudNeighborPicked[i - 4] = 1;
