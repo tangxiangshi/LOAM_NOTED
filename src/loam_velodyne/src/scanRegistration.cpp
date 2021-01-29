@@ -495,10 +495,7 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
     if (int(laserCloud->points[i].intensity) != scanCount) // what is this doing for ? 
     {
       scanCount = int(laserCloud->points[i].intensity);//控制每个scan只进入第一个点
-
-      //曲率只取同一个scan计算出来的，跨scan计算的曲率非法，排除，也即排除每个scan的前后五个点
-      if (scanCount > 0 && scanCount < N_SCANS) {
-        scanStartInd[scanCount] = i + 5;
+plllllllll
         scanEndInd[scanCount - 1] = i - 5;
       }
     }
@@ -588,29 +585,34 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
   pcl::PointCloud<PointType> surfPointsLessFlat;
 
   //将每条线上的点分入相应的类别：边沿点和平面点
-  for (int i = 0; i < N_SCANS; i++) {
+  for (int i = 0; i < N_SCANS; i++) 
+  {
     pcl::PointCloud<PointType>::Ptr surfPointsLessFlatScan(new pcl::PointCloud<PointType>);
     //将每个scan的曲率点分成6等份处理,确保周围都有点被选作特征点
-    for (int j = 0; j < 6; j++) {
+    for (int j = 0; j < 6; j++) // here still didn't get it
+    {
         //六等份起点：sp = scanStartInd + (scanEndInd - scanStartInd)*j/6
       int sp = (scanStartInd[i] * (6 - j)  + scanEndInd[i] * j) / 6;
-      //六等份终点：ep = scanStartInd - 1 + (scanEndInd - scanStartInd)*(j+1)/6
-      int ep = (scanStartInd[i] * (5 - j)  + scanEndInd[i] * (j + 1)) / 6 - 1;
+      //六等份终点：ep = scanStartInd - 1 + (scanEndInd - scanStartInd)*(j+1)/6 // -1 is designed for a segment's end is not another segement's beginning
+      int ep = (scanStartInd[i] * (5 - j)  + scanEndInd[i] * (j + 1)) / 6 - 1; // here
 
       //按曲率从小到大冒泡排序
-      for (int k = sp + 1; k <= ep; k++) {
-        for (int l = k; l >= sp + 1; l--) {
-            //如果后面曲率点大于前面，则交换
-          if (cloudCurvature[cloudSortInd[l]] < cloudCurvature[cloudSortInd[l - 1]]) {
+      for (int k = sp + 1; k <= ep; k++) // k = sp + 1 这样才可以与前面的点 即sp做比较
+      {
+        for (int l = k; l >= sp + 1; l--) 
+        {
+            //如果后面曲率点小于前面，则交换
+          if (cloudCurvature[cloudSortInd[l]] < cloudCurvature[cloudSortInd[l - 1]]) 
+          {
             int temp = cloudSortInd[l - 1];
-            cloudSortInd[l - 1] = cloudSortInd[l];
+            cloudSortInd[l - 1] = cloudSortInd[l]; // so to ensure that the curvature is from small to big
             cloudSortInd[l] = temp;
           }
         }
       }
 
       //挑选每个分段的曲率很大和比较大的点
-      int largestPickedNum = 0;
+      int largestPickedNum = 0;  // here
       for (int k = ep; k >= sp; k--) {
         int ind = cloudSortInd[k];  //曲率最大点的点序
 
